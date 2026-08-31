@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Κρίνοντας την playlist των Yes</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #12141c;
+    --surface: #1c2029;
+    --surface-2: #262b38;
+    --line: #333a4a;
+    --text: #eef0f5;
+    --text-dim: #9199ab;
+    --love: #37c47f;
+    --love-dim: #1f4a37;
+    --dislike: #ef5350;
+    --dislike-dim: #4a2222;
+    --meh: #f2c14e;
+    --meh-dim: #4a3f1f;
+    --radius: 22px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background: radial-gradient(circle at 50% -10%, #1a1f2e 0%, var(--bg) 55%);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding:24px 16px;
+    overflow-x:hidden;
+  }
+
+  .app{ width:100%; max-width:420px; position:relative; }
+
+  h1,h2,.display{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    margin:0;
+  }
+
+  /* ---------- Intro ---------- */
+  .screen{ width:100%; }
+  .hidden{ display:none !important; }
+
+  .intro{ text-align:left; padding:8px 4px; }
+  .intro .kicker{
+    color:var(--text-dim);
+    font-size:14px;
+    margin:0 0 10px;
+  }
+  .intro h1{ font-size:34px; line-height:1.15; margin-bottom:14px; }
+  .intro p{ color:var(--text-dim); font-size:15px; line-height:1.55; margin:0 0 24px; }
+  
+  .banner-container {
+    width: 100%;
+    margin-bottom: 24px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px dashed var(--line);
+    background: var(--surface);
+  }
+  .banner-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+  }
+
+  .name-label{
+    display:block;
+    font-size:13px;
+    color:var(--text-dim);
+    margin-bottom:8px;
+  }
+  .name-input{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 16px;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    margin-bottom:8px;
+  }
+  .name-input:focus{
+    outline:none;
+    border-color:var(--meh);
+  }
+  .name-error{
+    color:var(--dislike);
+    font-size:13px;
+    margin:0 0 16px;
+  }
+  .name-hint{
+    color:var(--text-dim);
+    font-size:12.5px;
+    line-height:1.5;
+    margin:0 0 20px;
+  }
+
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    border:none;
+    cursor:pointer;
+    border-radius:14px;
+    padding:16px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    transition:transform .12s ease, opacity .12s ease;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn-primary{
+    width:100%;
+    background:var(--text);
+    color:#12141c;
+  }
+  .btn-ghost{
+    background:transparent;
+    color:var(--text-dim);
+    border:1px solid var(--line);
+  }
+  .btn-small{
+    padding:9px 14px;
+    font-size:13px;
+    border-radius:11px;
+    width:auto;
+  }
+
+  /* ---------- Poll screen ---------- */
+  .poll-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:16px;
+    font-size:13px;
+    color:var(--text-dim);
+    gap:10px;
+  }
+  .progress-track{
+    height:3px;
+    background:var(--surface-2);
+    border-radius:3px;
+    overflow:hidden;
+    flex:1;
+    margin:0 12px;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--meh);
+    border-radius:3px;
+    transition:width .3s ease;
+  }
+  .stop-row{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:14px;
+  }
+
+  .card-stage{
+    position:relative;
+    height:420px;
+    margin-bottom:22px;
+  }
+
+  .card{
+    position:absolute;
+    inset:0;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px 20px 22px;
+    display:flex;
+    flex-direction:column;
+    touch-action:none;
+    cursor:grab;
+    user-select:none;
+  }
+  .card:active{ cursor:grabbing; }
+
+  .embed-wrap{
+    background:var(--surface-2);
+    border-radius:14px;
+    overflow:hidden;
+    pointer-events:none;
+  }
+  .embed-wrap iframe{
+    display:block;
+    width:100%;
+    height:80px;
+    border:0;
+  }
+  .embed-wrap.playable{ pointer-events:auto; }
+
+  .embed-fallback{
+    display:block;
+    text-align:center;
+    font-size:12px;
+    color:var(--text-dim);
+    margin-top:8px;
+    text-decoration:underline;
+    pointer-events:auto;
+  }
+
+  .card .meta{ margin-top:24px; }
+  .card .meta .label{
+    color:var(--text-dim);
+    font-size:12px;
+    letter-spacing:.02em;
+    margin-bottom:6px;
+  }
+  .card .title{ font-size:26px; line-height:1.2; }
+  .card .artist{
+    color:var(--text-dim);
+    font-size:16px;
+    margin-top:6px;
+  }
+
+  .stamp{
+    position:absolute;
+    top:26px;
+    padding:6px 14px;
+    border:3px solid;
+    border-radius:8px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:20px;
+    letter-spacing:.04em;
+    opacity:0;
+    pointer-events:none;
+    z-index: 10;
+  }
+  .stamp.love{ right:22px; color:var(--love); border-color:var(--love); transform:rotate(10deg); }
+  .stamp.dislike{ left:22px; color:var(--dislike); border-color:var(--dislike); transform:rotate(-10deg); }
+  .stamp.meh{ left:50%; transform:translateX(-50%); color:var(--meh); border-color:var(--meh); }
+
+  .verdict-row{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:10px;
+  }
+  .verdict-btn{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:14px 8px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+    color:var(--text-dim);
+    font-size:12.5px;
+    font-weight:600;
+    transition:transform .12s ease, border-color .12s ease, color .12s ease;
+  }
+  .verdict-btn:active{ transform:scale(0.95); }
+  .verdict-btn svg{ width:22px; height:22px; }
+  .verdict-btn.dislike:hover, .verdict-btn.dislike:active{ border-color:var(--dislike); color:var(--dislike); }
+  .verdict-btn.meh:hover, .verdict-btn.meh:active{ border-color:var(--meh); color:var(--meh); }
+  .verdict-btn.love:hover, .verdict-btn.love:active{ border-color:var(--love); color:var(--love); }
+
+  .swipe-hint{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:12px;
+    margin-top:16px;
+  }
+
+  /* ---------- Done screen ---------- */
+  .done{ text-align:left; padding:8px 4px; }
+  .done h1{ font-size:30px; margin-bottom:10px; }
+  .done p{ color:var(--text-dim); font-size:15px; line-height:1.55; margin:0 0 24px; }
+  .done .actions{ display:flex; flex-direction:column; gap:10px; }
+
+  /* ---------- Results ---------- */
+  .results{ padding:8px 4px; }
+  .results h2{ font-size:24px; margin-bottom:4px; }
+  .results .sub{ color:var(--text-dim); font-size:13px; margin-bottom:24px; }
+  .result-row{ margin-bottom:20px; }
+  .result-row .rt{ font-size:15px; font-weight:600; margin-bottom:2px; }
+  .result-row .ra{ font-size:13px; color:var(--text-dim); margin-bottom:8px; }
+  .bar{
+    display:flex;
+    height:10px;
+    border-radius:6px;
+    overflow:hidden;
+    background:var(--surface-2);
+  }
+  .bar span{ height:100%; }
+  .bar .dislike{ background:var(--dislike); }
+  .bar .meh{ background:var(--meh); }
+  .bar .love{ background:var(--love); }
+  .bar-legend{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:var(--text-dim);
+    margin-top:5px;
+  }
+  .voter-lines{
+    margin-top:10px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .voter-line{
+    font-size:12.5px;
+    line-height:1.5;
+  }
+  .voter-line .tag{
+    font-weight:600;
+    margin-right:6px;
+  }
+  .voter-line.love .tag{ color:var(--love); }
+  .voter-line.meh .tag{ color:var(--meh); }
+  .voter-line.dislike .tag{ color:var(--dislike); }
+  .voter-line .names{ color:var(--text-dim); }
+
+  .back-link{
+    display:inline-block;
+    margin-top:8px;
+    color:var(--text-dim);
+    font-size:13px;
+    text-decoration:underline;
+    cursor:pointer;
+    background:none;
+    border:none;
+    padding:0;
+    font-family:'Inter',sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- INTRO -->
+  <div id="screen-intro" class="screen intro">
+    <p class="kicker">Η ομάδα κρίνει τα Yes κι όχι το αντίστροφο.</p>
+    <h1>Το αγαπάς, το αντέχεις<br>ή το σιχαίνεσαι;</h1>
+    <p>Επώνυμη ψηφοφορία για τα κομμάτια που παίζουν στο μαγαζί. Απαντήστε σκεφτόμενοι/ες αν θα το ακούγατε σπίτι με δική σας απόφαση, αν θα το αντέχατε αν το 'βαζε κάποιος άλλος ή αν θα κλείνατε αμέσως το ραδιόφωνο στο αμάξι, ακόμα κι αν το αμάξι έπεφτε εκείνη την στιγμή από γκρεμό δυο χιλιάδων μέτρων και ήταν το τελευταίο πράγμα που θα κάνατε στην ζωή σας. :) </p>
+    
+    <div class="banner-container">
+      <img src="https://via.placeholder.com/800x400/262b38/eef0f5?text=Yes+Playlist+Banner" alt="Playlist Banner" class="banner-img">
+    </div>
+
+    <label class="name-label" for="name-input">Το όνομά σου...</label>
+    <input class="name-input" id="name-input" type="text" placeholder="π.χ. Σταύρακας, Κατερίνα Καινούριου ή «Β.»" maxlength="40" autocomplete="off">
+    <p class="name-error hidden" id="name-error">Γράψε το όνομά σου, εδώ δεν είναι εκλογές.</p>
+    <p class="name-hint">Αν σταματήσεις στη μέση, ξαναγράψε ακριβώς το ίδιο όνομα την επόμενη φορά για να συνεχίσεις από εκεί που έμεινες.</p>
+    <button class="btn btn-primary" id="start-btn">Άκουσε...</button>
+  </div>
+
+  <!-- POLL -->
+  <div id="screen-poll" class="screen hidden">
+    <div class="stop-row">
+      <button class="btn btn-ghost btn-small" id="stop-btn">Σταμάτα προς το παρόν</button>
+    </div>
+    <div class="poll-header">
+      <span id="poll-count">1 / 6</span>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <span id="poll-remaining">5 left</span>
+    </div>
+
+    <div class="card-stage">
+      <div class="card" id="card">
+        <div class="stamp love" id="stamp-love">ΚΑΙ ΓΑΜΩ</div>
+        <div class="stamp meh" id="stamp-meh">ΝΤΑΞ'</div>
+        <div class="stamp dislike" id="stamp-dislike">ΟΥΤΕ ΚΑΝ</div>
+        <div class="embed-wrap playable" id="embed-wrap"></div>
+        <div class="meta">
+          <div class="label">Παίζει τώρα</div>
+          <div class="title" id="track-title"></div>
+          <div class="artist" id="track-artist"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="verdict-row">
+      <button class="verdict-btn dislike" data-verdict="dislike">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        Ούτε καν.
+      </button>
+      <button class="verdict-btn meh" data-verdict="meh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>
+        Νταξ'.
+      </button>
+      <button class="verdict-btn love" data-verdict="love">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        Και γαμώ.
+      </button>
+    </div>
+    <p class="swipe-hint">Swipe left = σκιπ, swipe right = αγάπη, swipe down = νταξ' — ή, αν είσαι άνω των 21 απλά πάτα κάποιο μπουτόν/κουμπί, γέρο.</p>
+  </div>
+
+  <!-- DONE -->
+  <div id="screen-done" class="screen done hidden">
+    <h1 id="done-title">Να 'σαι καλά ρε μπροκολόκο.</h1>
+    <p id="done-summary">Σε φακελώσαμε. Θες να δεις τι είπαν τα υπόλοιπα φυντάνια, να ξέρεις με ποιους δεν θα ξανακάνεις βάρδια;</p>
+    <div class="actions">
+      <button class="btn btn-primary" id="results-btn">Δες τι είπαν οι άλλοι</button>
+      <button class="btn btn-ghost" id="resume-btn">Συνέχισε την ψηφοφορία</button>
+      <button class="btn btn-ghost" id="again-btn">Πάνε άλλη μία.</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="screen-results" class="screen results hidden">
+    <h2>Τι έχει πει η ομάδα μέχρι στιγμής</h2>
+    <p class="sub" id="results-sub">Φορτώνοντας τα αποτελέσματα...</p>
+    <div id="results-list"></div>
+    <button class="back-link" id="back-btn">Πίσω</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const TRACKS = [
+    { id:'0VjIjW4GlUZAMYd2vXMi3b', title:'Blinding Lights', artist:'The Weeknd' },
+    { id:'0pQskrTITgmCMyr85tb9qq', title:'Starman', artist:'David Bowie' },
+    { id:'01WFjqzUwrD4nfSQsHMVNm', title:'Ma Tnsani (Yalla Habibi)', artist:'Vanco, AYA' },
+    { id:'386RUes7n1uM1yfzgeUuwp', title:'The Lazy Song', artist:'Bruno Mars' },
+    { id:'6D8y7Bck8h11byRY88Pt2z', title:'Houdini', artist:'Dua Lipa' },
+    { id:'670yk984gYyOkrBKCgKeFv', title:'Child Is My Name', artist:'Kemopetrol' },
+    { id:'6naxalmIoLFWR0siv8dnQQ', title:"Oops!... I Did It Again", artist:'Britney Spears' },
+    { id:'39LLxExYz6ewLAcYrzQQyP', title:'Levitating', artist:'Dua Lipa' },
+    { id:'4Dvkj6JhhA12EX05fT7y2e', title:'As It Was', artist:'Harry Styles' },
+    { id:'0yLdNVWF3Srea0uzk55zFn', title:'Flowers', artist:'Miley Cyrus' },
+    { id:'3Dv1eDb0MEgF93GpLXlucZ', title:'Say So', artist:'Doja Cat' },
+    { id:'3USxtqRwSYz57Ewm6wWRMp', title:'Heat Waves', artist:'Glass Animals' },
+    { id:'7dqgBtA6ZY1RAdBU3FYRKj', title:'Russian Roulette', artist:'Rihanna' },
+    { id:'31T6dBbxWAz8eiXmL64JHk', title:'The Monster', artist:'Eminem, Rihanna' },
+    { id:'1dDNz8h95Gsu0W4QdxVVln', title:'4 Minutes', artist:'Madonna, Justin Timberlake, Timbaland' },
+    { id:'6mxyfdyF4LD7PctU3UNyjF', title:'Touch the Sky', artist:'Kanye West, Lupe Fiasco' },
+    { id:'5rxPi0MiR4miNK0rCmk980', title:'Broken People', artist:"Logic, Rag'n'Bone Man" },
+    { id:'0GU2I3pe9yOly0tlv3VDKP', title:'Κι Αν Χαθείς', artist:"Monsieur Minimal" },
+    { id:'2HRqTpkrJO5ggZyyK6NPWz', title:'Espresso', artist:"Sabrina Carpenter" },
+    { id:'6fujklziTHa8uoM5OQSfIo?si=cbca4f993e2946ce', title: 'Black Beetles', artist:"Rae Sremmurd" },
+    { id:'4f5sxA4nQywcBlU05Ixdc7', title:'Espresso Machiatto', artist:"Tommy Cash" },
+    { id:'2tHwzyyOLoWSFqYNjeVMzj', title:'Please Please Please', artist:'Sabrina Carpenter' },
+    { id:'0FIDCNYYjNvPVimz5icugS', title:'Timeless (feat. Playboi Carti', artist:"The Weeknd" },
+    { id:'7qiZfU4dY1lWllzX7mPBI3', title:'Shape of You', artist:"Ed Sheeran" },
+  ];
+
+  const votes = {};
+  let index = 0;
+  let respondentName = '';
+  let storageKey = '';
+  let forceReset = false;
+
+  function keyFor(name){
+    const slug = name.trim().toLowerCase().replace(/[\s\/\\'"]+/g, '_').slice(0, 120);
+    return `vote:${slug}`;
+  }
+
+  // ---- elements ----
+  const screenIntro = document.getElementById('screen-intro');
+  const screenPoll = document.getElementById('screen-poll');
+  const screenDone = document.getElementById('screen-done');
+  const screenResults = document.getElementById('screen-results');
+
+  const card = document.getElementById('card');
+  const embedWrap = document.getElementById('embed-wrap');
+  const trackTitleEl = document.getElementById('track-title');
+  const trackArtistEl = document.getElementById('track-artist');
+  const stampLove = document.getElementById('stamp-love');
+  const stampDislike = document.getElementById('stamp-dislike');
+  const stampMeh = document.getElementById('stamp-meh');
+  const pollCount = document.getElementById('poll-count');
+  const pollRemaining = document.getElementById('poll-remaining');
+  const progressFill = document.getElementById('progress-fill');
+  const doneTitle = document.getElementById('done-title');
+  const doneSummary = document.getElementById('done-summary');
+  const resumeBtn = document.getElementById('resume-btn');
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function showScreen(el){
+    [screenIntro, screenPoll, screenDone, screenResults].forEach(s => s.classList.add('hidden'));
+    el.classList.remove('hidden');
+  }
+
+  function nextUnvotedIndex(){
+    for(let i=0;i<TRACKS.length;i++){
+      if(votes[TRACKS[i].id] === undefined) return i;
+    }
+    return TRACKS.length; // all done
+  }
+
+  function renderCard(){
+    if(index >= TRACKS.length){
+      finishPoll();
+      return;
+    }
+    const t = TRACKS[index];
+    embedWrap.innerHTML = `<iframe src="https://open.spotify.com/embed/track/${t.id}?utm_source=generator&theme=0" width="100%" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe><a class="embed-fallback" href="https://open.spotify.com/track/${t.id}" target="_blank" rel="noopener">Player not loading? Open in Spotify ↗</a>`;
+    trackTitleEl.textContent = t.title;
+    trackArtistEl.textContent = t.artist;
+    card.style.transform = '';
+    card.style.opacity = 1;
+    stampLove.style.opacity = 0;
+    stampDislike.style.opacity = 0;
+    stampMeh.style.opacity = 0;
+    const doneCount = Object.keys(votes).length;
+    pollCount.textContent = `${doneCount+1} / ${TRACKS.length}`;
+    pollRemaining.textContent = `${TRACKS.length - doneCount - 1} left`;
+    progressFill.style.width = `${(doneCount/TRACKS.length)*100}%`;
+  }
+
+  function nextTrack(){
+    index++;
+    while(index < TRACKS.length && votes[TRACKS[index].id] !== undefined){
+      index++;
+    }
+    if(index >= TRACKS.length){
+      finishPoll();
+    } else {
+      renderCard();
+    }
+  }
+
+  async function saveProgress(){
+    if(!storageKey) return;
+    try{
+      await window.storage.set(storageKey, JSON.stringify({ name: respondentName, votes, ts: Date.now() }), true);
+    }catch(err){
+      console.error('Could not save votes', err);
+    }
+  }
+
+  function recordVote(trackId, verdict){
+    votes[trackId] = verdict;
+    saveProgress();
+  }
+
+  function animateOut(direction, cb){
+    const x = direction === 'left' ? -520 : direction === 'right' ? 520 : 0;
+    const y = direction === 'down' ? 520 : -10;
+    const rot = direction === 'left' ? -18 : direction === 'right' ? 18 : 0;
+    card.style.transition = 'transform .32s ease, opacity .32s ease';
+    card.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+    card.style.opacity = 0;
+    setTimeout(()=>{
+      card.style.transition = '';
+      cb();
+    }, 300);
+  }
+
+  function chooseVerdict(verdict){
+    const t = TRACKS[index];
+    recordVote(t.id, verdict);
+    const dir = verdict === 'love' ? 'right' : verdict === 'dislike' ? 'left' : 'down';
+    animateOut(dir, nextTrack);
+  }
+
+  document.querySelectorAll('.verdict-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> chooseVerdict(btn.dataset.verdict));
+  });
+
+  // ---- drag / swipe ----
+  let dragging = false, startX = 0, startY = 0, curX = 0, curY = 0;
+
+  card.addEventListener('pointerdown', (e)=>{
+    if(e.target.closest('iframe')) return;
+    dragging = true;
+    startX = e.clientX; startY = e.clientY;
+    card.setPointerCapture(e.pointerId);
+  });
+
+  card.addEventListener('pointermove', (e)=>{
+    if(!dragging) return;
+    curX = e.clientX - startX;
+    curY = e.clientY - startY;
+
+    if (curY > 40 && curY > Math.abs(curX)) {
+      card.style.transform = `translate(0px, ${curY}px)`;
+      stampMeh.style.opacity = Math.max(0, Math.min(1, curY / 100));
+      stampLove.style.opacity = 0;
+      stampDislike.style.opacity = 0;
+    } else {
+      const rot = curX / 18;
+      card.style.transform = `translate(${curX}px, ${curY}px) rotate(${rot}deg)`;
+      stampMeh.style.opacity = 0;
+      stampLove.style.opacity = Math.max(0, Math.min(1, curX / 90));
+      stampDislike.style.opacity = Math.max(0, Math.min(1, -curX / 90));
+    }
+  });
+
+  function endDrag(){
+    if(!dragging) return;
+    dragging = false;
+    const threshold = 110;
+
+    if (curY > threshold && curY > Math.abs(curX)) {
+      chooseVerdict('meh');
+    } else if(curX > threshold){
+      chooseVerdict('love');
+    } else if(curX < -threshold){
+      chooseVerdict('dislike');
+    } else {
+      card.style.transition = 'transform .25s ease';
+      card.style.transform = '';
+      stampLove.style.opacity = 0;
+      stampDislike.style.opacity = 0;
+      stampMeh.style.opacity = 0;
+      setTimeout(()=>{ card.style.transition=''; }, 250);
+    }
+    curX = 0; curY = 0;
+  }
+  card.addEventListener('pointerup', endDrag);
+  card.addEventListener('pointercancel', endDrag);
+
+  // ---- flow ----
+  document.getElementById('start-btn').addEventListener('click', async ()=>{
+    const nameInput = document.getElementById('name-input');
+    const nameError = document.getElementById('name-error');
+    const name = nameInput.value.trim();
+    if(!name){
+      nameError.classList.remove('hidden');
+      nameInput.focus();
+      return;
+    }
+    nameError.classList.add('hidden');
+    respondentName = name;
+    storageKey = keyFor(name);
+
+    Object.keys(votes).forEach(k=>delete votes[k]);
+
+    if(!forceReset) {
+      try{
+        const existing = await window.storage.get(storageKey, true);
+        if(existing){
+          const data = JSON.parse(existing.value);
+          const loadedVotes = data.votes || {};
+          // If previous voting was complete, start clean to overwrite old votes
+          if (Object.keys(loadedVotes).length < TRACKS.length) {
+            Object.assign(votes, loadedVotes);
+          }
+        }
+      }catch(e){ /* no previous entry, start fresh */ }
+    }
+    forceReset = false;
+
+    index = nextUnvotedIndex();
+    if(index >= TRACKS.length){
+      finishPoll();
+    } else {
+      showScreen(screenPoll);
+      renderCard();
+    }
+  });
+
+  document.getElementById('stop-btn').addEventListener('click', ()=> finishPoll());
+
+  async function finishPoll(){
+    const total = TRACKS.length;
+    const doneCount = Object.keys(votes).length;
+
+    if(doneCount >= total){
+      doneTitle.textContent = "Να 'σαι καλά ρε μπροκολόκο.";
+      doneSummary.textContent = 'Σε φακελώσαμε. Θες να δεις τι είπαν τα υπόλοιπα φυντάνια, να ξέρεις με ποιους δεν θα ξανακάνεις βάρδια;';
+      if(resumeBtn) resumeBtn.classList.add('hidden');
+    } else {
+      doneTitle.textContent = 'Το σταμάτησες, δεν το σκότωσες.';
+      doneSummary.textContent = `Πρόλαβες ${doneCount} από ${total}. Ξαναμπές με το ίδιο όνομα («${respondentName}») όποτε θες να συνεχίσεις.`;
+      if(resumeBtn) resumeBtn.classList.remove('hidden');
+    }
+    showScreen(screenDone);
+    await saveProgress();
+  }
+
+  resumeBtn.addEventListener('click', ()=>{
+    index = nextUnvotedIndex();
+    if(index >= TRACKS.length){
+      finishPoll();
+    } else {
+      showScreen(screenPoll);
+      renderCard();
+    }
+  });
+
+  document.getElementById('again-btn').addEventListener('click', ()=>{
+    Object.keys(votes).forEach(k=>delete votes[k]);
+    document.getElementById('name-input').value = respondentName;
+    forceReset = true;
+    index = 0;
+    showScreen(screenIntro);
+  });
+
+  document.getElementById('back-btn').addEventListener('click', ()=> showScreen(screenDone));
+
+  document.getElementById('results-btn').addEventListener('click', async ()=>{
+    showScreen(screenResults);
+    await loadResults();
+  });
+
+  async function loadResults(){
+    const resultsList = document.getElementById('results-list');
+    const resultsSub = document.getElementById('results-sub');
+    resultsList.innerHTML = '';
+    resultsSub.textContent = 'Φορτώνοντας τα αποτελέσματα...';
+
+    const tally = {};
+    TRACKS.forEach(t => tally[t.id] = { love:[], meh:[], dislike:[] });
+
+    let respondents = 0;
+    try{
+      const listResult = await window.storage.list('vote:', true);
+      const keys = (listResult && listResult.keys) || [];
+      respondents = keys.length;
+      for(const key of keys){
+        try{
+          const res = await window.storage.get(key, true);
+          if(!res) continue;
+          const data = JSON.parse(res.value);
+          const voterName = (data.name && data.name.trim()) || 'Ανώνυμος/η';
+          Object.entries(data.votes || {}).forEach(([trackId, verdict])=>{
+            if(tally[trackId] && tally[trackId][verdict] !== undefined){
+              tally[trackId][verdict].push(voterName);
+            }
+          });
+        }catch(e){ /* skip unreadable entry */ }
+      }
+    }catch(err){
+      console.error('Could not load results', err);
+    }
+
+    resultsSub.textContent = respondents > 0
+      ? `Με βάση ${respondents} απαντήσεις μέχρι στιγμής.`
+      : 'Δεν υπάρχουν ακόμα απαντήσεις — γίνε ο/η πρώτος/η.';
+
+    TRACKS.forEach(t=>{
+      const counts = tally[t.id];
+      const total = counts.love.length + counts.meh.length + counts.dislike.length;
+      const pct = (arr)=> total ? (arr.length/total*100) : 0;
+
+      const voterLines = [
+        { key:'love', label:'Αγάπη', names:counts.love },
+        { key:'meh', label:"Νταξ'", names:counts.meh },
+        { key:'dislike', label:'Σκιπ', names:counts.dislike },
+      ].filter(v => v.names.length > 0)
+       .map(v => `<div class="voter-line ${v.key}"><span class="tag">${v.label}</span><span class="names">${v.names.map(escapeHtml).join(', ')}</span></div>`)
+       .join('');
+
+      const row = document.createElement('div');
+      row.className = 'result-row';
+      row.innerHTML = `
+        <div class="rt">${escapeHtml(t.title)}</div>
+        <div class="ra">${escapeHtml(t.artist)}</div>
+        <div class="bar">
+          <span class="dislike" style="width:${pct(counts.dislike)}%"></span>
+          <span class="meh" style="width:${pct(counts.meh)}%"></span>
+          <span class="love" style="width:${pct(counts.love)}%"></span>
+        </div>
+        <div class="bar-legend">
+          <span>Σκιπ ${counts.dislike.length}</span>
+          <span>Νταξ' ${counts.meh.length}</span>
+          <span>Αγάπη ${counts.love.length}</span>
+        </div>
+        ${voterLines ? `<div class="voter-lines">${voterLines}</div>` : ''}
+      `;
+      resultsList.appendChild(row);
+    });
+  }
+
+})();
+</script>
+
+</body>
+</html>
