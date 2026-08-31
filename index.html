@@ -429,6 +429,9 @@
 
 <script>
 (function(){
+  // PASTE YOUR FIREBASE REALTIME DATABASE URL HERE
+  const FIREBASE_DB_URL = "https://yes-playlist-poll-default-rtdb.europe-west1.firebasedatabase.app/";
+
   const TRACKS = [
     { id:'0VjIjW4GlUZAMYd2vXMi3b', title:'Blinding Lights', artist:'The Weeknd' },
     { id:'0pQskrTITgmCMyr85tb9qq', title:'Starman', artist:'David Bowie' },
@@ -463,8 +466,7 @@
   let forceReset = false;
 
   function keyFor(name){
-    const slug = name.trim().toLowerCase().replace(/[\s\/\\'"]+/g, '_').slice(0, 120);
-    return `vote:${slug}`;
+    return name.trim().toLowerCase().replace(/[\s\/\\'"]+/g, '_').slice(0, 120);
   }
 
   // ---- elements ----
@@ -536,11 +538,15 @@
   }
 
   async function saveProgress(){
-    if(!storageKey) return;
+    if(!storageKey || FIREBASE_DB_URL.includes("YOUR-FIREBASE-PROJECT")) return;
     try{
-      await window.storage.set(storageKey, JSON.stringify({ name: respondentName, votes, ts: Date.now() }), true);
+      await fetch(`${FIREBASE_DB_URL}/votes/${storageKey}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: respondentName, votes, ts: Date.now() })
+      });
     }catch(err){
-      console.error('Could not save votes', err);
+      console.error('Could not save votes to database', err);
     }
   }
 
@@ -642,18 +648,17 @@
 
     Object.keys(votes).forEach(k=>delete votes[k]);
 
-    if(!forceReset) {
+    if(!forceReset && !FIREBASE_DB_URL.includes("YOUR-FIREBASE-PROJECT")) {
       try{
-        const existing = await window.storage.get(storageKey, true);
-        if(existing){
-          const data = JSON.parse(existing.value);
-          const loadedVotes = data.votes || {};
-          // If previous voting was complete, start clean to overwrite old votes
+        const res = await fetch(`${FIREBASE_DB_URL}/votes/${storageKey}.json`);
+        const existing = await res.json();
+        if(existing && existing.votes){
+          const loadedVotes = existing.votes || {};
           if (Object.keys(loadedVotes).length < TRACKS.length) {
             Object.assign(votes, loadedVotes);
           }
         }
-      }catch(e){ /* no previous entry, start fresh */ }
+      }catch(e){ /* start fresh */ }
     }
     forceReset = false;
 
@@ -720,25 +725,27 @@
     TRACKS.forEach(t => tally[t.id] = { love:[], meh:[], dislike:[] });
 
     let respondents = 0;
-    try{
-      const listResult = await window.storage.list('vote:', true);
-      const keys = (listResult && listResult.keys) || [];
-      respondents = keys.length;
-      for(const key of keys){
-        try{
-          const res = await window.storage.get(key, true);
-          if(!res) continue;
-          const data = JSON.parse(res.value);
-          const voterName = (data.name && data.name.trim()) || 'Ανώνυμος/η';
-          Object.entries(data.votes || {}).forEach(([trackId, verdict])=>{
-            if(tally[trackId] && tally[trackId][verdict] !== undefined){
-              tally[trackId][verdict].push(voterName);
-            }
+    if(!FIREBASE_DB_URL.includes("YOUR-FIREBASE-PROJECT")){
+      try{
+        const res = await fetch(`${FIREBASE_DB_URL}/votes.json`);
+        const allData = await res.json();
+        if(allData){
+          const keys = Object.keys(allData);
+          respondents = keys.length;
+          keys.forEach(key => {
+            const data = allData[key];
+            if(!data) return;
+            const voterName = (data.name && data.name.trim()) || 'Ανώνυμος/η';
+            Object.entries(data.votes || {}).forEach(([trackId, verdict])=>{
+              if(tally[trackId] && tally[trackId][verdict] !== undefined){
+                tally[trackId][verdict].push(voterName);
+              }
+            });
           });
-        }catch(e){ /* skip unreadable entry */ }
+        }
+      }catch(err){
+        console.error('Could not load results', err);
       }
-    }catch(err){
-      console.error('Could not load results', err);
     }
 
     resultsSub.textContent = respondents > 0
