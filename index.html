@@ -31,7 +31,7 @@
     color:var(--text);
     font-family:'Inter',system-ui,sans-serif;
     display:flex;
-    align-items:flex-start; /* Fixed top cutoff on long pages */
+    align-items:flex-start;
     justify-content:center;
     min-height:100vh;
     padding:24px 16px;
@@ -42,7 +42,7 @@
     width:100%; 
     max-width:420px; 
     position:relative; 
-    margin: auto 0; /* Auto-centers short screens while allowing tall screens to scroll */
+    margin: auto 0;
   }
 
   h1,h2,.display{
@@ -317,7 +317,7 @@
   .done p{ color:var(--text-dim); font-size:15px; line-height:1.55; margin:0 0 24px; }
   .done .actions{ display:flex; flex-direction:column; gap:10px; }
 
-  /* ---------- Results Overview (New Screen) ---------- */
+  /* ---------- Results Overview ---------- */
   .overview-screen{ padding:8px 4px; }
   .overview-screen h2{ font-size:24px; margin-bottom:14px; }
   
@@ -326,7 +326,7 @@
     border:1px solid var(--line);
     border-radius:16px;
     padding:18px;
-    margin-bottom:24px;
+    margin-bottom:18px;
     display:flex;
     flex-direction:column;
     gap:14px;
@@ -341,6 +341,43 @@
   .summary-p.love-text b{ color:var(--love); }
   .summary-p.meh-text b{ color:var(--meh); }
   .summary-p.dislike-text b{ color:var(--dislike); }
+
+  /* ---------- Pair Highlights (Taste Twins & Nemeses) ---------- */
+  .pair-highlights {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .pair-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .twin-card { border-color: rgba(55, 196, 127, 0.35); }
+  .nemesis-card { border-color: rgba(239, 83, 80, 0.35); }
+  .pair-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+  .twin-card .pair-badge { color: var(--love); }
+  .nemesis-card .pair-badge { color: var(--dislike); }
+  .pair-names {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.35;
+  }
+  .pair-score {
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
 
   .chart-section {
     margin-bottom: 24px;
@@ -481,10 +518,10 @@
   <div id="modal-voted" class="modal-overlay hidden">
     <div class="modal-card">
       <h2>Έχεις ήδη ψηφίσει.</h2>
-      <p>Θέλεις να δεις τα αποτελέσματα ή να ψηφίσεις ξανά;</p>
+      <p id="modal-desc">Θέλεις να δεις τα αποτελέσματα ή να συνεχίσεις την ψηφοφορία;</p>
       <div class="modal-actions">
         <button class="btn btn-primary" id="modal-results-btn">Δες τα αποτελέσματα</button>
-        <button class="btn btn-ghost" id="modal-again-btn">Να ψηφίσεις ξανά</button>
+        <button class="btn btn-ghost" id="modal-again-btn">Συνέχισε την ψηφοφορία</button>
       </div>
     </div>
   </div>
@@ -569,6 +606,20 @@
       <p class="summary-p dislike-text" id="summary-haters"></p>
     </div>
 
+    <!-- PAIR HIGHLIGHTS (Taste Twins & Nemeses) -->
+    <div id="pair-highlights-container" class="pair-highlights hidden">
+      <div class="pair-card twin-card">
+        <div class="pair-badge">🎧 Μουσική Ταύτιση</div>
+        <div class="pair-names" id="twins-names">-</div>
+        <div class="pair-score" id="twins-score">-</div>
+      </div>
+      <div class="pair-card nemesis-card">
+        <div class="pair-badge">⚡ Μουσική Κόντρα</div>
+        <div class="pair-names" id="nemeses-names">-</div>
+        <div class="pair-score" id="nemeses-score">-</div>
+      </div>
+    </div>
+
     <div class="chart-section">
       <div class="chart-title">Κατανομή Ψήφων ανά Συνάδελφο</div>
       <div class="chart-scroll-wrapper">
@@ -600,7 +651,7 @@
   // PASTE YOUR FIREBASE REALTIME DATABASE URL HERE
   const FIREBASE_DB_URL = "https://yes-playlist-poll-default-rtdb.europe-west1.firebasedatabase.app/";
 
-const TRACKS = [
+  const TRACKS = [
     { id:'0VjIjW4GlUZAMYd2vXMi3b', title:'Blinding Lights', artist:'The Weeknd' },
     { id:'0pQskrTITgmCMyr85tb9qq', title:'Starman', artist:'David Bowie' },
     { id:'01WFjqzUwrD4nfSQsHMVNm', title:'Ma Tnsani (Yalla Habibi)', artist:'Vanco, AYA' },
@@ -623,7 +674,7 @@ const TRACKS = [
     { id:'6fujklziTHa8uoM5OQSfIo?si=cbca4f993e2946ce', title: 'Black Beetles', artist:"Rae Sremmurd" },
     { id:'4f5sxA4nQywcBlU05Ixdc7', title:'Espresso Machiatto', artist:"Tommy Cash" },
     { id:'2tHwzyyOLoWSFqYNjeVMzj', title:'Please Please Please', artist:'Sabrina Carpenter' },
-    { id:'0FIDCNYYjNvPVimz5icugS', title:'Timeless (feat. Playboi Carti)', artist:"The Weeknd" },
+    { id:'0FIDCNYYjNvPVimz5icugS', title:'Timeless (feat. Playboi Carti', artist:"The Weeknd" },
     { id:'7qiZfU4dY1lWllzX7mPBI3', title:'Shape of You', artist:"Ed Sheeran" },
     { id:'1vV6XXeeYaebAbMr5vBCOq', title:'Dusk Till Dawn', artist:"Coyot" },
     { id:'5tR13oIwi5J3elcTZPTTIU', title:'Kelly Watch the Stars', artist:"Air" },
@@ -631,18 +682,28 @@ const TRACKS = [
     { id:'6bqwehy3tbGuAM4TcRFOk5', title:'Воля', artist:"MIRAVI" },
     { id:'6cx06DFPPHchuUAcTxznu9', title:'HEAD & HEART (feat. MNEK)', artist:"Joel Corry" },
     { id:'6Zu3aw7FfjAF9WA0fA81Oq', title:'Big Energy', artist:"Latto" },
-    { id:'3DarAbFujv6eYNliUTyqtz', title:'Kiss Me More (ft. SZA)', artist:"Doja Cat" },
-    { id:'6dOtVTDdiauQNBQEDOtlAB', title:'BIRDS OF A FEATHER', artist:'Billie Eilish' },
-    
   ];
+
+  // WEIGHT MATRIX FOR PAIRWISE COMPARISONS
+  const PAIR_WEIGHTS = {
+    'love_love': 1.0,
+    'meh_meh': 1.0,
+    'dislike_dislike': 1.0,
+    'love_meh': 0.5,
+    'meh_love': 0.5,
+    'dislike_meh': -0.2,
+    'meh_dislike': -0.2,
+    'love_dislike': -1.0,
+    'dislike_love': -1.0
+  };
 
   const votes = {};
   let index = 0;
   let respondentName = '';
   let storageKey = '';
   let forceReset = false;
-  let cachedAllData = null; // Cache fetched Firebase data for quick screen transitions
-  let existingUserData = null; // Store existing vote record for user prompt flow
+  let cachedAllData = null;
+  let existingUserData = null;
 
   function keyFor(name){
     return name.trim().toLowerCase().replace(/[\s\/\\'"]+/g, '_').slice(0, 120);
@@ -650,6 +711,7 @@ const TRACKS = [
 
   // ---- elements ----
   const modalVoted = document.getElementById('modal-voted');
+  const modalDesc = document.getElementById('modal-desc');
   const modalResultsBtn = document.getElementById('modal-results-btn');
   const modalAgainBtn = document.getElementById('modal-again-btn');
 
@@ -846,6 +908,17 @@ const TRACKS = [
         const existing = await res.json();
         if(existing && existing.votes && Object.keys(existing.votes).length > 0){
           existingUserData = existing;
+          
+          // Custom modal prompt text depending on completion
+          const votedCount = Object.keys(existing.votes).length;
+          if (votedCount < TRACKS.length) {
+            modalDesc.textContent = `Έχεις απαντήσει σε ${votedCount} από 30 κομμάτια. Θέλεις να συνεχίσεις από εκεί που έμεινες;`;
+            modalAgainBtn.textContent = 'Συνέχισε την ψηφοφορία';
+          } else {
+            modalDesc.textContent = 'Έχεις ολοκληρώσει την ψηφοφορία. Θέλεις να δεις τα αποτελέσματα ή να ψηφίσεις ξανά από την αρχή;';
+            modalAgainBtn.textContent = 'Να ψηφίσεις ξανά';
+          }
+
           modalVoted.classList.remove('hidden');
           return;
         }
@@ -862,7 +935,7 @@ const TRACKS = [
     }
   });
 
-  // ---- Prompt Modal Handlers ----
+  // ---- Modal Action Buttons ----
   modalResultsBtn.addEventListener('click', async ()=>{
     modalVoted.classList.add('hidden');
     showScreen(screenOverview);
@@ -874,17 +947,17 @@ const TRACKS = [
     if(!existingUserData || !existingUserData.votes) return;
 
     const loadedVotes = existingUserData.votes;
-    const hasNewTracks = TRACKS.some(t => loadedVotes[t.id] === undefined);
+    const hasUnvotedTracks = TRACKS.some(t => loadedVotes[t.id] === undefined);
 
-    if(!hasNewTracks){
-      // No new tracks have been added: eliminate record of votes and start fresh
+    if(hasUnvotedTracks){
+      // Incomplete: Load existing votes and resume remaining tracks
+      Object.assign(votes, loadedVotes);
+      index = nextUnvotedIndex();
+    } else {
+      // Completed: Clear votes and start a brand new run
       Object.keys(votes).forEach(k=>delete votes[k]);
       await saveProgress();
       index = 0;
-    } else {
-      // New tracks have been added: continue from where they left off
-      Object.assign(votes, loadedVotes);
-      index = nextUnvotedIndex();
     }
 
     if(index >= TRACKS.length){
@@ -932,7 +1005,6 @@ const TRACKS = [
     showScreen(screenIntro);
   });
 
-  // Navigation handlers
   document.getElementById('results-btn').addEventListener('click', async ()=>{
     showScreen(screenOverview);
     await loadOverviewResults();
@@ -946,7 +1018,6 @@ const TRACKS = [
   document.getElementById('back-from-overview-btn').addEventListener('click', ()=> showScreen(screenDone));
   document.getElementById('back-btn').addEventListener('click', ()=> showScreen(screenOverview));
 
-  // Fetch all data helper
   async function fetchAllVotes() {
     if(FIREBASE_DB_URL.includes("YOUR-FIREBASE-PROJECT")) return {};
     try {
@@ -959,20 +1030,69 @@ const TRACKS = [
     }
   }
 
+  // WEIGHTED PAIRWISE CALCULATION
+  function calculatePairHighlights(allVotesData) {
+    const users = Object.values(allVotesData).filter(u => u && u.name && u.votes && Object.keys(u.votes).length > 0);
+    if (users.length < 2) return null;
+
+    let maxScore = -Infinity;
+    let minScore = Infinity;
+    let twinsPair = null;
+    let nemesesPair = null;
+
+    for (let i = 0; i < users.length; i++) {
+      for (let j = i + 1; j < users.length; j++) {
+        const u1 = users[i];
+        const u2 = users[j];
+
+        let sharedCount = 0;
+        let scoreSum = 0;
+
+        Object.keys(u1.votes).forEach(trackId => {
+          if (u2.votes[trackId]) {
+            const pairKey = `${u1.votes[trackId]}_${u2.votes[trackId]}`;
+            if (PAIR_WEIGHTS[pairKey] !== undefined) {
+              scoreSum += PAIR_WEIGHTS[pairKey];
+              sharedCount++;
+            }
+          }
+        });
+
+        // Require at least 3 shared tracks to evaluate a pair
+        if (sharedCount >= 3) {
+          const avgScore = scoreSum / sharedCount;
+
+          if (avgScore > maxScore) {
+            maxScore = avgScore;
+            twinsPair = { u1: u1.name.trim(), u2: u2.name.trim(), score: Math.round(avgScore * 100) };
+          }
+          if (avgScore < minScore) {
+            minScore = avgScore;
+            nemesesPair = { u1: u1.name.trim(), u2: u2.name.trim(), score: Math.round(avgScore * 100) };
+          }
+        }
+      }
+    }
+
+    return { twinsPair, nemesesPair };
+  }
+
   // OVERVIEW RESULTS (Statistical Page)
   async function loadOverviewResults(){
     const loversEl = document.getElementById('summary-lovers');
     const neutralsEl = document.getElementById('summary-neutrals');
     const hatersEl = document.getElementById('summary-haters');
     const histogramContainer = document.getElementById('histogram-container');
+    const pairHighlightsContainer = document.getElementById('pair-highlights-container');
 
     loversEl.textContent = 'Φορτώνοντας στατιστικά...';
     neutralsEl.textContent = '';
     hatersEl.textContent = '';
     histogramContainer.innerHTML = '';
+    pairHighlightsContainer.classList.add('hidden');
 
     const allVotes = await fetchAllVotes();
-    const userStats = []; // [{ name: '', love: 0, meh: 0, dislike: 0, category: '' }]
+    const userStats = [];
 
     Object.values(allVotes).forEach(userData => {
       if(!userData || !userData.name) return;
@@ -1002,12 +1122,11 @@ const TRACKS = [
       return;
     }
 
-    // Group users by category
+    // Grouping summary
     const lovers = userStats.filter(u => u.category === 'love').map(u => u.name);
     const neutrals = userStats.filter(u => u.category === 'meh').map(u => u.name);
     const haters = userStats.filter(u => u.category === 'dislike').map(u => u.name);
 
-    // Dynamic Greek Paragraphs
     loversEl.innerHTML = lovers.length > 0
       ? `Σύμφωνα με τα αποτελέσματα, ${lovers.length === 1 ? 'ο/η' : 'οι'} <b>${escapeHtml(formatNameList(lovers))}</b> γουστάρουν να δουλεύουν εδώ και πρέπει να πάρουν παραπάνω βάρδιες.`
       : `Κανένας/καμία δεν φαίνεται να γουστάρει τρελά το μαγαζί.`;
@@ -1020,8 +1139,22 @@ const TRACKS = [
       ? `${haters.length === 1 ? 'Ο/Η' : 'Οι'} <b>${escapeHtml(formatNameList(haters))}</b> χρειάζονται άδειες ή ωτοασπίδες.`
       : `Κανένας δεν υπέφερε ολοκληρωτικά!`;
 
+    // Render Pair Highlights (Twins & Nemeses)
+    const pairData = calculatePairHighlights(allVotes);
+    if (pairData && (pairData.twinsPair || pairData.nemesesPair)) {
+      if (pairData.twinsPair) {
+        document.getElementById('twins-names').textContent = `${pairData.twinsPair.u1} & ${pairData.twinsPair.u2}`;
+        document.getElementById('twins-score').textContent = `Ταυτίζονται κατά ${pairData.twinsPair.score}%`;
+      }
+      if (pairData.nemesesPair) {
+        document.getElementById('nemeses-names').textContent = `${pairData.nemesesPair.u1} & ${pairData.nemesesPair.u2}`;
+        document.getElementById('nemeses-score').textContent = `Διαφωνούν κατά ${Math.abs(pairData.nemesesPair.score)}%`;
+      }
+      pairHighlightsContainer.classList.remove('hidden');
+    }
+
     // Render Histogram Chart
-    const maxVal = TRACKS.length; // Max possible votes height scale
+    const maxVal = TRACKS.length;
 
     userStats.forEach(u => {
       const groupDiv = document.createElement('div');
