@@ -31,14 +31,19 @@
     color:var(--text);
     font-family:'Inter',system-ui,sans-serif;
     display:flex;
-    align-items:center;
     justify-content:center;
+    align-items:flex-start; /* Changed from center to flex-start */
     min-height:100vh;
     padding:24px 16px;
     overflow-x:hidden;
   }
-
-  .app{ width:100%; max-width:420px; position:relative; }
+  
+  .app{ 
+    width:100%; 
+    max-width:420px; 
+    position:relative; 
+    margin: auto 0; /* Keeps short screens vertically centered, but defaults to top alignment on long pages */
+  }
 
   h1,h2,.display{
     font-family:'Space Grotesk',sans-serif;
