@@ -51,6 +51,33 @@
     margin:0;
   }
 
+  /* ---------- Modal Overlay ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 20, 28, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+  }
+  .modal-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  .modal-card h2 { font-size: 20px; margin-bottom: 8px; }
+  .modal-card p { color: var(--text-dim); font-size: 14.5px; line-height: 1.5; margin-bottom: 20px; }
+  .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+
   /* ---------- Intro ---------- */
   .screen{ width:100%; }
   .hidden{ display:none !important; }
@@ -450,6 +477,18 @@
 
 <div class="app">
 
+  <!-- ALREADY VOTED MODAL -->
+  <div id="modal-voted" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h2>Έχεις ήδη ψηφίσει.</h2>
+      <p>Θέλεις να δεις τα αποτελέσματα ή να ψηφίσεις ξανά;</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="modal-results-btn">Δες τα αποτελέσματα</button>
+        <button class="btn btn-ghost" id="modal-again-btn">Να ψηφίσεις ξανά</button>
+      </div>
+    </div>
+  </div>
+
   <!-- INTRO -->
   <div id="screen-intro" class="screen intro">
     <p class="kicker">Η ομάδα κρίνει τα Yes κι όχι το αντίστροφο.</p>
@@ -601,12 +640,17 @@ const TRACKS = [
   let storageKey = '';
   let forceReset = false;
   let cachedAllData = null; // Cache fetched Firebase data for quick screen transitions
+  let existingUserData = null; // Store existing vote record for user prompt flow
 
   function keyFor(name){
     return name.trim().toLowerCase().replace(/[\s\/\\'"]+/g, '_').slice(0, 120);
   }
 
   // ---- elements ----
+  const modalVoted = document.getElementById('modal-voted');
+  const modalResultsBtn = document.getElementById('modal-results-btn');
+  const modalAgainBtn = document.getElementById('modal-again-btn');
+
   const screenIntro = document.getElementById('screen-intro');
   const screenPoll = document.getElementById('screen-poll');
   const screenDone = document.getElementById('screen-done');
@@ -792,22 +836,55 @@ const TRACKS = [
     storageKey = keyFor(name);
 
     Object.keys(votes).forEach(k=>delete votes[k]);
+    existingUserData = null;
 
     if(!forceReset && !FIREBASE_DB_URL.includes("YOUR-FIREBASE-PROJECT")) {
       try{
         const res = await fetch(`${FIREBASE_DB_URL}/votes/${storageKey}.json`);
         const existing = await res.json();
-        if(existing && existing.votes){
-          const loadedVotes = existing.votes || {};
-          if (Object.keys(loadedVotes).length < TRACKS.length) {
-            Object.assign(votes, loadedVotes);
-          }
+        if(existing && existing.votes && Object.keys(existing.votes).length > 0){
+          existingUserData = existing;
+          modalVoted.classList.remove('hidden');
+          return;
         }
       }catch(e){ /* start fresh */ }
     }
     forceReset = false;
 
     index = nextUnvotedIndex();
+    if(index >= TRACKS.length){
+      finishPoll();
+    } else {
+      showScreen(screenPoll);
+      renderCard();
+    }
+  });
+
+  // ---- Prompt Modal Handlers ----
+  modalResultsBtn.addEventListener('click', async ()=>{
+    modalVoted.classList.add('hidden');
+    showScreen(screenOverview);
+    await loadOverviewResults();
+  });
+
+  modalAgainBtn.addEventListener('click', async ()=>{
+    modalVoted.classList.add('hidden');
+    if(!existingUserData || !existingUserData.votes) return;
+
+    const loadedVotes = existingUserData.votes;
+    const hasNewTracks = TRACKS.some(t => loadedVotes[t.id] === undefined);
+
+    if(!hasNewTracks){
+      // No new tracks have been added: eliminate record of votes and start fresh
+      Object.keys(votes).forEach(k=>delete votes[k]);
+      await saveProgress();
+      index = 0;
+    } else {
+      // New tracks have been added: continue from where they left off
+      Object.assign(votes, loadedVotes);
+      index = nextUnvotedIndex();
+    }
+
     if(index >= TRACKS.length){
       finishPoll();
     } else {
