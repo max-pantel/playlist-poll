@@ -31,18 +31,18 @@
     color:var(--text);
     font-family:'Inter',system-ui,sans-serif;
     display:flex;
+    align-items:flex-start; /* Fixed top cutoff on long pages */
     justify-content:center;
-    align-items:flex-start; /* Changed from center to flex-start */
     min-height:100vh;
     padding:24px 16px;
     overflow-x:hidden;
   }
-  
+
   .app{ 
     width:100%; 
     max-width:420px; 
     position:relative; 
-    margin: auto 0; /* Keeps short screens vertically centered, but defaults to top alignment on long pages */
+    margin: auto 0; /* Auto-centers short screens while allowing tall screens to scroll */
   }
 
   h1,h2,.display{
@@ -290,7 +290,105 @@
   .done p{ color:var(--text-dim); font-size:15px; line-height:1.55; margin:0 0 24px; }
   .done .actions{ display:flex; flex-direction:column; gap:10px; }
 
-  /* ---------- Results ---------- */
+  /* ---------- Results Overview (New Screen) ---------- */
+  .overview-screen{ padding:8px 4px; }
+  .overview-screen h2{ font-size:24px; margin-bottom:14px; }
+  
+  .summary-box{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:24px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .summary-p{
+    font-size:14px;
+    line-height:1.5;
+    margin:0;
+    color:var(--text);
+  }
+  .summary-p b{ color:#fff; }
+  .summary-p.love-text b{ color:var(--love); }
+  .summary-p.meh-text b{ color:var(--meh); }
+  .summary-p.dislike-text b{ color:var(--dislike); }
+
+  .chart-section {
+    margin-bottom: 24px;
+  }
+  .chart-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: var(--text-dim);
+  }
+  .chart-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px 14px 14px;
+  }
+  .histogram {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    min-height: 190px;
+    width: max-content;
+    min-width: 100%;
+    justify-content: space-around;
+  }
+  .user-chart-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .bars-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 140px;
+  }
+  .bar-col {
+    width: 12px;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.4s ease;
+    position: relative;
+    min-height: 2px;
+  }
+  .bar-col.dislike { background: var(--dislike); }
+  .bar-col.meh { background: var(--meh); }
+  .bar-col.love { background: var(--love); }
+  
+  .user-name-label {
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 600;
+    max-width: 70px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-dot.dislike { background: var(--dislike); }
+  .legend-dot.meh { background: var(--meh); }
+  .legend-dot.love { background: var(--love); }
+
+  /* ---------- Detailed Results ---------- */
   .results{ padding:8px 4px; }
   .results h2{ font-size:24px; margin-bottom:4px; }
   .results .sub{ color:var(--text-dim); font-size:13px; margin-bottom:24px; }
@@ -336,7 +434,7 @@
 
   .back-link{
     display:inline-block;
-    margin-top:8px;
+    margin-top:16px;
     color:var(--text-dim);
     font-size:13px;
     text-decoration:underline;
@@ -359,7 +457,7 @@
     <p>Επώνυμη ψηφοφορία για τα κομμάτια που παίζουν στο μαγαζί. Απαντήστε σκεφτόμενοι/ες αν θα το ακούγατε σπίτι με δική σας απόφαση, αν θα το αντέχατε αν το 'βαζε κάποιος άλλος ή αν θα κλείνατε αμέσως το ραδιόφωνο στο αμάξι, ακόμα κι αν το αμάξι έπεφτε εκείνη την στιγμή από γκρεμό δυο χιλιάδων μέτρων και ήταν το τελευταίο πράγμα που θα κάνατε στην ζωή σας. :) </p>
     
     <div class="banner-container">
-      <img src="https://4.bp.blogspot.com/-Bi15CzneDxI/V2R6d9gdpHI/AAAAAAAAKYk/zNUX_bX0GHIzuAnLWaE2HztCAw-l6AisgCLcB/s1600/The%2Bheadquarters%2Bof%2BMussolini%2527s%2BItalian%2BFascist%2BParty%252C%2B1934.jpg" alt="Playlist Banner" class="banner-img">
+      <img src="https://via.placeholder.com/800x400/262b38/eef0f5?text=Yes+Playlist+Banner" alt="Playlist Banner" class="banner-img">
     </div>
 
     <label class="name-label" for="name-input">Το όνομά σου...</label>
@@ -422,12 +520,38 @@
     </div>
   </div>
 
-  <!-- RESULTS -->
+  <!-- RESULTS OVERVIEW (STATISTICS PAGE) -->
+  <div id="screen-results-overview" class="screen overview-screen hidden">
+    <h2>Στατιστικά Ομάδας</h2>
+    
+    <div class="summary-box">
+      <p class="summary-p love-text" id="summary-lovers">Φορτώνοντας στατιστικά...</p>
+      <p class="summary-p meh-text" id="summary-neutrals"></p>
+      <p class="summary-p dislike-text" id="summary-haters"></p>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-title">Κατανομή Ψήφων ανά Συνάδελφο</div>
+      <div class="chart-scroll-wrapper">
+        <div class="histogram" id="histogram-container"></div>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item"><span class="legend-dot dislike"></span> Ούτε καν</div>
+        <div class="legend-item"><span class="legend-dot meh"></span> Νταξ'</div>
+        <div class="legend-item"><span class="legend-dot love"></span> Και γαμώ</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="go-detailed-btn">Δείτε αναλυτικά αποτελέσματα</button>
+    <button class="back-link" id="back-from-overview-btn">Πίσω</button>
+  </div>
+
+  <!-- DETAILED RESULTS -->
   <div id="screen-results" class="screen results hidden">
-    <h2>Τι έχει πει η ομάδα μέχρι στιγμής</h2>
+    <h2>Αναλυτικά αποτελέσματα ανά κομμάτι</h2>
     <p class="sub" id="results-sub">Φορτώνοντας τα αποτελέσματα...</p>
     <div id="results-list"></div>
-    <button class="back-link" id="back-btn">Πίσω</button>
+    <button class="back-link" id="back-btn">Πίσω στα στατιστικά</button>
   </div>
 
 </div>
@@ -435,9 +559,9 @@
 <script>
 (function(){
   // PASTE YOUR FIREBASE REALTIME DATABASE URL HERE
-  const FIREBASE_DB_URL = "https://yes-playlist-poll-default-rtdb.europe-west1.firebasedatabase.app/";
+  const FIREBASE_DB_URL = "https://YOUR-FIREBASE-PROJECT-default-rtdb.firebaseio.com";
 
-  const TRACKS = [
+const TRACKS = [
     { id:'0VjIjW4GlUZAMYd2vXMi3b', title:'Blinding Lights', artist:'The Weeknd' },
     { id:'0pQskrTITgmCMyr85tb9qq', title:'Starman', artist:'David Bowie' },
     { id:'01WFjqzUwrD4nfSQsHMVNm', title:'Ma Tnsani (Yalla Habibi)', artist:'Vanco, AYA' },
@@ -476,6 +600,7 @@
   let respondentName = '';
   let storageKey = '';
   let forceReset = false;
+  let cachedAllData = null; // Cache fetched Firebase data for quick screen transitions
 
   function keyFor(name){
     return name.trim().toLowerCase().replace(/[\s\/\\'"]+/g, '_').slice(0, 120);
@@ -485,6 +610,7 @@
   const screenIntro = document.getElementById('screen-intro');
   const screenPoll = document.getElementById('screen-poll');
   const screenDone = document.getElementById('screen-done');
+  const screenOverview = document.getElementById('screen-results-overview');
   const screenResults = document.getElementById('screen-results');
 
   const card = document.getElementById('card');
@@ -505,8 +631,15 @@
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  function formatNameList(names) {
+    if (!names || names.length === 0) return "-";
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return `${names[0]} και ${names[1]}`;
+    return `${names.slice(0, -1).join(', ')} και ${names[names.length - 1]}`;
+  }
+
   function showScreen(el){
-    [screenIntro, screenPoll, screenDone, screenResults].forEach(s => s.classList.add('hidden'));
+    [screenIntro, screenPoll, screenDone, screenOverview, screenResults].forEach(s => s.classList.add('hidden'));
     el.classList.remove('hidden');
   }
 
@@ -514,7 +647,7 @@
     for(let i=0;i<TRACKS.length;i++){
       if(votes[TRACKS[i].id] === undefined) return i;
     }
-    return TRACKS.length; // all done
+    return TRACKS.length;
   }
 
   function renderCard(){
@@ -695,7 +828,7 @@
       if(resumeBtn) resumeBtn.classList.add('hidden');
     } else {
       doneTitle.textContent = 'Το σταμάτησες, δεν το σκότωσες.';
-      doneSummary.textContent = `Πρόλαβες ${doneCount} από ${total}. Ξαναμπές με το ίδιο όνομα («${respondentName}») όποτε θες να συνεχίσεις.`;
+      doneSummary.textContent = `Απάντησες ${doneCount} από ${total}. Ξαναμπές με το ίδιο όνομα («${respondentName}») όποτε θες να συνεχίσεις.`;
       if(resumeBtn) resumeBtn.classList.remove('hidden');
     }
     showScreen(screenDone);
@@ -720,14 +853,119 @@
     showScreen(screenIntro);
   });
 
-  document.getElementById('back-btn').addEventListener('click', ()=> showScreen(screenDone));
-
+  // Navigation handlers
   document.getElementById('results-btn').addEventListener('click', async ()=>{
-    showScreen(screenResults);
-    await loadResults();
+    showScreen(screenOverview);
+    await loadOverviewResults();
   });
 
-  async function loadResults(){
+  document.getElementById('go-detailed-btn').addEventListener('click', async ()=>{
+    showScreen(screenResults);
+    await loadDetailedResults();
+  });
+
+  document.getElementById('back-from-overview-btn').addEventListener('click', ()=> showScreen(screenDone));
+  document.getElementById('back-btn').addEventListener('click', ()=> showScreen(screenOverview));
+
+  // Fetch all data helper
+  async function fetchAllVotes() {
+    if(FIREBASE_DB_URL.includes("YOUR-FIREBASE-PROJECT")) return {};
+    try {
+      const res = await fetch(`${FIREBASE_DB_URL}/votes.json`);
+      cachedAllData = await res.json() || {};
+      return cachedAllData;
+    } catch(e) {
+      console.error('Database fetch error', e);
+      return {};
+    }
+  }
+
+  // OVERVIEW RESULTS (Statistical Page)
+  async function loadOverviewResults(){
+    const loversEl = document.getElementById('summary-lovers');
+    const neutralsEl = document.getElementById('summary-neutrals');
+    const hatersEl = document.getElementById('summary-haters');
+    const histogramContainer = document.getElementById('histogram-container');
+
+    loversEl.textContent = 'Φορτώνοντας στατιστικά...';
+    neutralsEl.textContent = '';
+    hatersEl.textContent = '';
+    histogramContainer.innerHTML = '';
+
+    const allVotes = await fetchAllVotes();
+    const userStats = []; // [{ name: '', love: 0, meh: 0, dislike: 0, category: '' }]
+
+    Object.values(allVotes).forEach(userData => {
+      if(!userData || !userData.name) return;
+      const counts = { love: 0, meh: 0, dislike: 0 };
+      Object.values(userData.votes || {}).forEach(verdict => {
+        if(counts[verdict] !== undefined) counts[verdict]++;
+      });
+
+      let category = 'meh';
+      if (counts.love > counts.dislike && counts.love >= counts.meh) {
+        category = 'love';
+      } else if (counts.dislike > counts.love && counts.dislike >= counts.meh) {
+        category = 'dislike';
+      }
+
+      userStats.push({
+        name: userData.name.trim(),
+        love: counts.love,
+        meh: counts.meh,
+        dislike: counts.dislike,
+        category: category
+      });
+    });
+
+    if(userStats.length === 0) {
+      loversEl.textContent = 'Δεν υπάρχουν ακόμα αρκετά δεδομένα ψηφοφορίας.';
+      return;
+    }
+
+    // Group users by category
+    const lovers = userStats.filter(u => u.category === 'love').map(u => u.name);
+    const neutrals = userStats.filter(u => u.category === 'meh').map(u => u.name);
+    const haters = userStats.filter(u => u.category === 'dislike').map(u => u.name);
+
+    // Dynamic Greek Paragraphs
+    loversEl.innerHTML = lovers.length > 0
+      ? `Σύμφωνα με τα αποτελέσματα, ${lovers.length === 1 ? 'ο/η' : 'οι'} <b>${escapeHtml(formatNameList(lovers))}</b> γουστάρουν να δουλεύουν εδώ και πρέπει να πάρουν παραπάνω βάρδιες.`
+      : `Κανένας/καμία δεν φαίνεται να γουστάρει τρελά το μαγαζί.`;
+
+    neutralsEl.innerHTML = neutrals.length > 0
+      ? `${neutrals.length === 1 ? 'Ο/Η' : 'Οι'} <b>${escapeHtml(formatNameList(neutrals))}</b> την παλεύουν, μάλλον.`
+      : `Δεν υπάρχει κανείς στην ουδέτερη ζώνη.`;
+
+    hatersEl.innerHTML = haters.length > 0
+      ? `${haters.length === 1 ? 'Ο/Η' : 'Οι'} <b>${escapeHtml(formatNameList(haters))}</b> χρειάζονται άδειες ή ωτοασπίδες.`
+      : `Κανένας δεν υπέφερε ολοκληρωτικά!`;
+
+    // Render Histogram Chart
+    const maxVal = TRACKS.length; // Max possible votes height scale
+
+    userStats.forEach(u => {
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'user-chart-group';
+
+      const hDislike = (u.dislike / maxVal) * 100;
+      const hMeh = (u.meh / maxVal) * 100;
+      const hLove = (u.love / maxVal) * 100;
+
+      groupDiv.innerHTML = `
+        <div class="bars-container">
+          <div class="bar-col dislike" style="height:${hDislike}%" title="Ούτε καν: ${u.dislike}"></div>
+          <div class="bar-col meh" style="height:${hMeh}%" title="Νταξ': ${u.meh}"></div>
+          <div class="bar-col love" style="height:${hLove}%" title="Και γαμώ: ${u.love}"></div>
+        </div>
+        <div class="user-name-label" title="${escapeHtml(u.name)}">${escapeHtml(u.name)}</div>
+      `;
+      histogramContainer.appendChild(groupDiv);
+    });
+  }
+
+  // DETAILED RESULTS PAGE
+  async function loadDetailedResults(){
     const resultsList = document.getElementById('results-list');
     const resultsSub = document.getElementById('results-sub');
     resultsList.innerHTML = '';
@@ -736,29 +974,18 @@
     const tally = {};
     TRACKS.forEach(t => tally[t.id] = { love:[], meh:[], dislike:[] });
 
-    let respondents = 0;
-    if(!FIREBASE_DB_URL.includes("YOUR-FIREBASE-PROJECT")){
-      try{
-        const res = await fetch(`${FIREBASE_DB_URL}/votes.json`);
-        const allData = await res.json();
-        if(allData){
-          const keys = Object.keys(allData);
-          respondents = keys.length;
-          keys.forEach(key => {
-            const data = allData[key];
-            if(!data) return;
-            const voterName = (data.name && data.name.trim()) || 'Ανώνυμος/η';
-            Object.entries(data.votes || {}).forEach(([trackId, verdict])=>{
-              if(tally[trackId] && tally[trackId][verdict] !== undefined){
-                tally[trackId][verdict].push(voterName);
-              }
-            });
-          });
+    const allData = cachedAllData || await fetchAllVotes();
+    const respondents = Object.keys(allData).length;
+
+    Object.values(allData).forEach(data => {
+      if(!data) return;
+      const voterName = (data.name && data.name.trim()) || 'Ανώνυμος/η';
+      Object.entries(data.votes || {}).forEach(([trackId, verdict])=>{
+        if(tally[trackId] && tally[trackId][verdict] !== undefined){
+          tally[trackId][verdict].push(voterName);
         }
-      }catch(err){
-        console.error('Could not load results', err);
-      }
-    }
+      });
+    });
 
     resultsSub.textContent = respondents > 0
       ? `Με βάση ${respondents} απαντήσεις μέχρι στιγμής.`
