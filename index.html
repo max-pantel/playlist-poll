@@ -1182,6 +1182,7 @@
   }
 
   // REFACTORED PAIRWISE TASTE COMPATIBILITY (3-STEP MODEL)
+// REFACTORED PAIRWISE TASTE COMPATIBILITY (3-STEP MODEL + UI PERCENTAGES)
 function calculatePairHighlights(allVotesData) {
   const users = Object.values(allVotesData).filter(
     u => u && u.name && u.votes && Object.keys(u.votes).length > 0
@@ -1204,7 +1205,7 @@ function calculatePairHighlights(allVotesData) {
   });
 
   // =========================================================================
-  // PRE-COMPUTE COMMUNITY BASELINE (Probability P(v_k) per Track & Verdict)
+  // PRE-COMPUTE COMMUNITY BASELINE (Probability P(v_k) per Track)
   // =========================================================================
   const trackCounts = {};
   users.forEach(u => {
@@ -1221,7 +1222,6 @@ function calculatePairHighlights(allVotesData) {
   const trackProbabilities = {};
   Object.entries(trackCounts).forEach(([trackId, counts]) => {
     const total = counts.total || 1;
-    // Floor at 2% (0.02) to prevent division by zero or infinite log values
     trackProbabilities[trackId] = {
       love: Math.max(counts.love / total, 0.02),
       meh: Math.max(counts.meh / total, 0.02),
@@ -1230,7 +1230,7 @@ function calculatePairHighlights(allVotesData) {
   });
 
   // =========================================================================
-  // STEP 2: INFORMATION-WEIGHTED SIMILARITY (TF-IDF for Shared Tracks)
+  // STEP 2: INFORMATION-WEIGHTED SIMILARITY & UI DISPLAY PERCENTAGE
   // =========================================================================
   const rawPairResults = [];
 
@@ -1243,6 +1243,7 @@ function calculatePairHighlights(allVotesData) {
 
       let sharedCount = 0;
       let totalTrackScore = 0;
+      let uiMatchSum = 0; // Tracks intuitive percentage for the UI
 
       Object.keys(u1.votes).forEach(trackId => {
         const v1 = u1.votes[trackId];
@@ -1251,11 +1252,15 @@ function calculatePairHighlights(allVotesData) {
         if (v2 && NUMERIC_MAP[v1] !== undefined && NUMERIC_MAP[v2] !== undefined) {
           sharedCount++;
 
-          // Normalized deviation from personal mean
+          // 1. Calculate Human-Readable UI Percentage (0 to 1 scale per track)
+          const diff = Math.abs(NUMERIC_MAP[v1] - NUMERIC_MAP[v2]);
+          if (diff === 0) uiMatchSum += 1.0;       // Exact match (e.g., love/love)
+          else if (diff === 1) uiMatchSum += 0.5;  // Partial match (e.g., love/meh)
+          // If diff === 2 (love/dislike), adds 0
+
+          // 2. Calculate Advanced Statistical Score for Ranking
           const r1Centered = NUMERIC_MAP[v1] - u1Mean;
           const r2Centered = NUMERIC_MAP[v2] - u2Mean;
-
-          // Information weights: Rarity = -log2(P(v))
           const p1 = trackProbabilities[trackId]?.[v1] || 0.02;
           const p2 = trackProbabilities[trackId]?.[v2] || 0.02;
           const info1 = -Math.log2(p1);
@@ -1263,15 +1268,9 @@ function calculatePairHighlights(allVotesData) {
 
           let trackScore = 0;
           if (v1 === v2) {
-            // Agreement on rare choices yields high positive scores
-            const rarityWeight = info1;
-            const convictionBoost = 1 + Math.abs(r1Centered * r2Centered);
-            trackScore = rarityWeight * convictionBoost;
+            trackScore = info1 * (1 + Math.abs(r1Centered * r2Centered));
           } else {
-            // Disagreements on consensus choices yield severe negative penalties
-            const penaltyWeight = Math.max(info1, info2);
-            const divergence = 1 + Math.abs(r1Centered - r2Centered) / 2;
-            trackScore = -penaltyWeight * divergence;
+            trackScore = -Math.max(info1, info2) * (1 + Math.abs(r1Centered - r2Centered) / 2);
           }
 
           totalTrackScore += trackScore;
@@ -1283,7 +1282,8 @@ function calculatePairHighlights(allVotesData) {
           u1: u1.name.trim(),
           u2: u2.name.trim(),
           sharedCount,
-          rawScore: totalTrackScore / sharedCount
+          rawScore: totalTrackScore / sharedCount,
+          uiMatchScore: (uiMatchSum / sharedCount) * 100 // Raw Agreement %
         });
       }
     }
@@ -1297,7 +1297,7 @@ function calculatePairHighlights(allVotesData) {
   const populationMeanScore =
     rawPairResults.reduce((acc, pair) => acc + pair.rawScore, 0) / rawPairResults.length;
   
-  const lambda = 5; // Smoothing strength parameter (requires ~5-10 tracks to pull away from mean)
+  const lambda = 5; 
 
   const processedPairs = rawPairResults.map(pair => {
     const adjustedScore =
@@ -1307,7 +1307,7 @@ function calculatePairHighlights(allVotesData) {
     return { ...pair, adjustedScore };
   });
 
-  // Identify Taste Twins (Max Score) and Nemeses (Min Score)
+  // Identify Taste Twins (Max Adjusted Score) and Nemeses (Min Adjusted Score)
   let twinsPair = null;
   let nemesesPair = null;
   let maxScore = -Infinity;
@@ -1324,23 +1324,16 @@ function calculatePairHighlights(allVotesData) {
     }
   });
 
-  // Scale scores relative to baseline bound (~4.0) for UI percentage rendering
-  const MAX_EXPECTED_SCORE = 4.0;
-  
-  const twinPct = twinsPair
-    ? Math.min(100, Math.max(0, Math.round((twinsPair.adjustedScore / MAX_EXPECTED_SCORE) * 100)))
-    : 0;
-
-  const nemesisPct = nemesesPair
-    ? Math.min(100, Math.max(0, Math.round((Math.abs(nemesesPair.adjustedScore) / MAX_EXPECTED_SCORE) * 100)))
-    : 0;
-
+  // Return the statistically best pairs, but display their intuitive Agreement %
   return {
-    twinsPair: twinsPair ? { u1: twinsPair.u1, u2: twinsPair.u2, score: twinPct } : null,
-    nemesesPair: nemesesPair ? { u1: nemesesPair.u1, u2: nemesesPair.u2, score: nemesisPct } : null
+    twinsPair: twinsPair 
+      ? { u1: twinsPair.u1, u2: twinsPair.u2, score: Math.round(twinsPair.uiMatchScore) } 
+      : null,
+    nemesesPair: nemesesPair 
+      ? { u1: nemesesPair.u1, u2: nemesesPair.u2, score: Math.round(100 - nemesesPair.uiMatchScore) } 
+      : null
   };
 }
-
   // OVERVIEW RESULTS (Statistical Page)
   async function loadOverviewResults(){
     const loversEl = document.getElementById('summary-lovers');
