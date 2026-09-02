@@ -74,9 +74,79 @@
     text-align: center;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   }
-  .modal-card h2 { font-size: 20px; margin-bottom: 8px; }
-  .modal-card p { color: var(--text-dim); font-size: 14.5px; line-height: 1.5; margin-bottom: 20px; }
-  .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+  .modal-card.login-card{ max-width:380px; text-align:left; }
+  .modal-card.login-card h2{ text-align:center; }
+  .modal-card.login-card > p{ text-align:center; }
+
+  .login-names-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-height:220px;
+    overflow-y:auto;
+    margin-bottom:12px;
+  }
+  .login-name-btn{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:12px;
+    padding:13px 14px;
+    font-size:14.5px;
+    font-weight:600;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    text-align:left;
+    transition:transform .12s ease, border-color .12s ease;
+  }
+  .login-name-btn:active{ transform:scale(0.97); }
+  .login-name-btn:hover{ border-color:var(--meh); }
+
+  .login-names-empty{
+    color:var(--text-dim);
+    font-size:13px;
+    text-align:center;
+    margin-bottom:12px;
+  }
+
+  .login-divider{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:11px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    margin:14px 0 10px;
+  }
+
+  .first-time-btn{
+    width:100%;
+    background:#ffffff;
+    color:#12141c;
+    border:1px solid #ffffff;
+    border-radius:12px;
+    padding:14px;
+    font-size:14.5px;
+    font-weight:700;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    transition:transform .12s ease, opacity .12s ease;
+  }
+  .first-time-btn:active{ transform:scale(0.97); }
+  .first-time-btn:hover{ opacity:.92; }
+
+  .first-time-panel{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .3s ease;
+  }
+  .first-time-panel.open{
+    max-height:220px;
+    margin-top:12px;
+  }
+  .first-time-panel .name-input{ margin-bottom:8px; }
+  .first-time-panel .name-error{ margin:0 0 10px; text-align:left; }
+
+  .login-cancel-row{ text-align:center; margin-top:16px; }
 
   /* ---------- Intro ---------- */
   .screen{ width:100%; }
@@ -526,6 +596,31 @@
     </div>
   </div>
 
+  <!-- LOGIN MODAL -->
+  <div id="modal-login" class="modal-overlay hidden">
+    <div class="modal-card login-card">
+      <h2>Ποιος ψηφίζει;</h2>
+      <p>Διάλεξε το όνομά σου από τη λίστα, ή ξεκίνα για πρώτη φορά.</p>
+
+      <div class="login-names-list" id="login-names-list">
+        <p class="login-names-empty">Φορτώνει...</p>
+      </div>
+
+      <div class="login-divider">ή</div>
+
+      <button class="first-time-btn" id="first-time-btn">Ψηφίζω πρώτη φορά</button>
+      <div class="first-time-panel" id="first-time-panel">
+        <input class="name-input" id="new-name-input" type="text" placeholder="π.χ. Σταύρακας, Κατερίνα Καινούριου ή «Β.»" maxlength="40" autocomplete="off">
+        <p class="name-error hidden" id="new-name-error">Γράψε το όνομά σου, εδώ δεν είναι εκλογές.</p>
+        <button class="btn btn-primary" id="new-name-start-btn">Ξεκίνα</button>
+      </div>
+
+      <div class="login-cancel-row">
+        <button class="back-link" id="login-cancel-btn">Άκυρο</button>
+      </div>
+    </div>
+  </div>
+
   <!-- INTRO -->
   <div id="screen-intro" class="screen intro">
     <p class="kicker">Η ομάδα κρίνει τα Yes κι όχι το αντίστροφο.</p>
@@ -536,11 +631,7 @@
       <img src="https://www.lifo.gr/sites/default/files/styles/max_1920x1920/public/articles/2021-01-21/feat_periptero72.jpg?itok=dWul_AFj" alt="Playlist Banner" class="banner-img">
     </div>
 
-    <label class="name-label" for="name-input">Το όνομά σου...</label>
-    <input class="name-input" id="name-input" type="text" placeholder="π.χ. Σταύρακας, Κατερίνα Καινούριου ή «Β.»" maxlength="40" autocomplete="off">
-    <p class="name-error hidden" id="name-error">Γράψε το όνομά σου, εδώ δεν είναι εκλογές.</p>
-    <p class="name-hint">Αν σταματήσεις στη μέση, ξαναγράψε ακριβώς το ίδιο όνομα την επόμενη φορά για να συνεχίσεις από εκεί που έμεινες.</p>
-    <button class="btn btn-primary" id="start-btn">Άκουσε...</button>
+    <button class="btn btn-primary" id="login-btn">Συνδέσου</button>
   </div>
 
   <!-- POLL -->
@@ -684,6 +775,8 @@
     { id:'6Zu3aw7FfjAF9WA0fA81Oq', title:'Big Energy', artist:"Latto" },
     { id:'10H6mvk1cPPTzs3IHsHSHi', title:'What the Water Gave Me', artist: "Florence & The Machine" },
     { id:'2cTOee6bTauDFK1QuDS1BD', title:'What Else is There?', artist:"Röyksopp" },
+    { id:'2gam98EZKrF9XuOkU13ApN', title:'Promiscuous', artist:"Nelly Furtado" },
+    { id:'6Q44rxzH39y2tjic98Spo5', title:'Fergalicious', artist:"Fergie, will.i.am" },
   ];
 
   // WEIGHT MATRIX FOR PAIRWISE COMPARISONS
@@ -703,7 +796,6 @@
   let index = 0;
   let respondentName = '';
   let storageKey = '';
-  let forceReset = false;
   let cachedAllData = null;
   let existingUserData = null;
 
@@ -716,6 +808,15 @@
   const modalDesc = document.getElementById('modal-desc');
   const modalResultsBtn = document.getElementById('modal-results-btn');
   const modalAgainBtn = document.getElementById('modal-again-btn');
+
+  const modalLogin = document.getElementById('modal-login');
+  const loginNamesList = document.getElementById('login-names-list');
+  const firstTimeBtn = document.getElementById('first-time-btn');
+  const firstTimePanel = document.getElementById('first-time-panel');
+  const newNameInput = document.getElementById('new-name-input');
+  const newNameError = document.getElementById('new-name-error');
+  const newNameStartBtn = document.getElementById('new-name-start-btn');
+  const loginCancelBtn = document.getElementById('login-cancel-btn');
 
   const screenIntro = document.getElementById('screen-intro');
   const screenPoll = document.getElementById('screen-poll');
@@ -887,54 +988,98 @@
   card.addEventListener('pointerup', endDrag);
   card.addEventListener('pointercancel', endDrag);
 
-  // ---- flow ----
-  document.getElementById('start-btn').addEventListener('click', async ()=>{
-    const nameInput = document.getElementById('name-input');
-    const nameError = document.getElementById('name-error');
-    const name = nameInput.value.trim();
-    if(!name){
-      nameError.classList.remove('hidden');
-      nameInput.focus();
+  // ---- login modal ----
+  function openExistingUserFlow(){
+    // shows the "already voted" modal for whoever was just selected/entered
+    const votedCount = Object.keys(existingUserData.votes).length;
+    if (votedCount < TRACKS.length) {
+      modalDesc.textContent = `Έχεις απαντήσει σε ${votedCount} από ${TRACKS.length} κομμάτια. Θέλεις να συνεχίσεις από εκεί που έμεινες;`;
+      modalAgainBtn.textContent = 'Συνέχισε την ψηφοφορία';
+    } else {
+      modalDesc.textContent = 'Έχεις ολοκληρώσει την ψηφοφορία. Θέλεις να δεις τα αποτελέσματα ή να ψηφίσεις ξανά από την αρχή;';
+      modalAgainBtn.textContent = 'Να ψηφίσεις ξανά';
+    }
+    modalVoted.classList.remove('hidden');
+  }
+
+  async function openLoginModal(){
+    firstTimePanel.classList.remove('open');
+    newNameInput.value = '';
+    newNameError.classList.add('hidden');
+    loginNamesList.innerHTML = '<p class="login-names-empty">Φορτώνει...</p>';
+    modalLogin.classList.remove('hidden');
+
+    const allData = await fetchAllVotes();
+    cachedAllData = allData;
+
+    const entries = Object.entries(allData)
+      .filter(([key, data]) => data && data.name && data.votes && Object.keys(data.votes).length > 0)
+      .sort((a, b) => a[1].name.trim().localeCompare(b[1].name.trim(), 'el'));
+
+    loginNamesList.innerHTML = '';
+    if(entries.length === 0){
+      loginNamesList.innerHTML = '<p class="login-names-empty">Δεν έχει ψηφίσει ακόμα κανείς.</p>';
       return;
     }
-    nameError.classList.add('hidden');
+
+    entries.forEach(([key, data]) => {
+      const btn = document.createElement('button');
+      btn.className = 'login-name-btn';
+      btn.type = 'button';
+      btn.textContent = data.name.trim();
+      btn.addEventListener('click', ()=>{
+        modalLogin.classList.add('hidden');
+        respondentName = data.name.trim();
+        storageKey = key;
+        Object.keys(votes).forEach(k=>delete votes[k]);
+        existingUserData = data;
+        openExistingUserFlow();
+      });
+      loginNamesList.appendChild(btn);
+    });
+  }
+
+  document.getElementById('login-btn').addEventListener('click', openLoginModal);
+
+  loginCancelBtn.addEventListener('click', ()=> modalLogin.classList.add('hidden'));
+
+  firstTimeBtn.addEventListener('click', ()=>{
+    firstTimePanel.classList.toggle('open');
+    if(firstTimePanel.classList.contains('open')){
+      newNameInput.focus();
+    }
+  });
+
+  function startFirstTimeVoter(){
+    const name = newNameInput.value.trim();
+    if(!name){
+      newNameError.textContent = 'Γράψε το όνομά σου, εδώ δεν είναι εκλογές.';
+      newNameError.classList.remove('hidden');
+      newNameInput.focus();
+      return;
+    }
+    const slug = keyFor(name);
+    const takenEntry = cachedAllData && cachedAllData[slug];
+    if(takenEntry && takenEntry.votes && Object.keys(takenEntry.votes).length > 0){
+      newNameError.textContent = 'Αυτό το όνομα υπάρχει ήδη — διάλεξέ το από τη λίστα από πάνω.';
+      newNameError.classList.remove('hidden');
+      return;
+    }
+    newNameError.classList.add('hidden');
+    modalLogin.classList.add('hidden');
+
     respondentName = name;
-    storageKey = keyFor(name);
-
-    Object.keys(votes).forEach(k=>delete votes[k]);
+    storageKey = slug;
     existingUserData = null;
+    Object.keys(votes).forEach(k=>delete votes[k]);
+    index = 0;
+    showScreen(screenPoll);
+    renderCard();
+  }
 
-    if(!forceReset && !FIREBASE_DB_URL.includes("YOUR-FIREBASE-PROJECT")) {
-      try{
-        const res = await fetch(`${FIREBASE_DB_URL}/votes/${storageKey}.json`);
-        const existing = await res.json();
-        if(existing && existing.votes && Object.keys(existing.votes).length > 0){
-          existingUserData = existing;
-          
-          // Custom modal prompt text depending on completion
-          const votedCount = Object.keys(existing.votes).length;
-          if (votedCount < TRACKS.length) {
-            modalDesc.textContent = `Έχεις απαντήσει σε ${votedCount} από 30 κομμάτια. Θέλεις να συνεχίσεις από εκεί που έμεινες;`;
-            modalAgainBtn.textContent = 'Συνέχισε την ψηφοφορία';
-          } else {
-            modalDesc.textContent = 'Έχεις ολοκληρώσει την ψηφοφορία. Θέλεις να δεις τα αποτελέσματα ή να ψηφίσεις ξανά από την αρχή;';
-            modalAgainBtn.textContent = 'Να ψηφίσεις ξανά';
-          }
-
-          modalVoted.classList.remove('hidden');
-          return;
-        }
-      }catch(e){ /* start fresh */ }
-    }
-    forceReset = false;
-
-    index = nextUnvotedIndex();
-    if(index >= TRACKS.length){
-      finishPoll();
-    } else {
-      showScreen(screenPoll);
-      renderCard();
-    }
+  newNameStartBtn.addEventListener('click', startFirstTimeVoter);
+  newNameInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') startFirstTimeVoter();
   });
 
   // ---- Modal Action Buttons ----
@@ -1001,10 +1146,10 @@
 
   document.getElementById('again-btn').addEventListener('click', ()=>{
     Object.keys(votes).forEach(k=>delete votes[k]);
-    document.getElementById('name-input').value = respondentName;
-    forceReset = true;
+    existingUserData = null;
     index = 0;
-    showScreen(screenIntro);
+    showScreen(screenPoll);
+    renderCard();
   });
 
   document.getElementById('results-btn').addEventListener('click', async ()=>{
