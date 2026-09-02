@@ -1181,52 +1181,165 @@
     }
   }
 
-  // WEIGHTED PAIRWISE CALCULATION
-  function calculatePairHighlights(allVotesData) {
-    const users = Object.values(allVotesData).filter(u => u && u.name && u.votes && Object.keys(u.votes).length > 0);
-    if (users.length < 2) return null;
+  // REFACTORED PAIRWISE TASTE COMPATIBILITY (3-STEP MODEL)
+function calculatePairHighlights(allVotesData) {
+  const users = Object.values(allVotesData).filter(
+    u => u && u.name && u.votes && Object.keys(u.votes).length > 0
+  );
+  if (users.length < 2) return null;
 
-    let maxScore = -Infinity;
-    let minScore = Infinity;
-    let twinsPair = null;
-    let nemesesPair = null;
+  const NUMERIC_MAP = { love: 1, meh: 0, dislike: -1 };
 
-    for (let i = 0; i < users.length; i++) {
-      for (let j = i + 1; j < users.length; j++) {
-        const u1 = users[i];
-        const u2 = users[j];
+  // =========================================================================
+  // STEP 1: MEAN-CENTERING (Normalize for Optimist vs. Cynic Bias)
+  // =========================================================================
+  const userMeans = {};
+  users.forEach(u => {
+    const numericVotes = Object.values(u.votes)
+      .map(v => NUMERIC_MAP[v])
+      .filter(val => val !== undefined);
 
-        let sharedCount = 0;
-        let scoreSum = 0;
+    const sum = numericVotes.reduce((acc, val) => acc + val, 0);
+    userMeans[u.name] = numericVotes.length > 0 ? sum / numericVotes.length : 0;
+  });
 
-        Object.keys(u1.votes).forEach(trackId => {
-          if (u2.votes[trackId]) {
-            const pairKey = `${u1.votes[trackId]}_${u2.votes[trackId]}`;
-            if (PAIR_WEIGHTS[pairKey] !== undefined) {
-              scoreSum += PAIR_WEIGHTS[pairKey];
-              sharedCount++;
-            }
+  // =========================================================================
+  // PRE-COMPUTE COMMUNITY BASELINE (Probability P(v_k) per Track & Verdict)
+  // =========================================================================
+  const trackCounts = {};
+  users.forEach(u => {
+    Object.entries(u.votes).forEach(([trackId, verdict]) => {
+      if (NUMERIC_MAP[verdict] === undefined) return;
+      if (!trackCounts[trackId]) {
+        trackCounts[trackId] = { love: 0, meh: 0, dislike: 0, total: 0 };
+      }
+      trackCounts[trackId][verdict]++;
+      trackCounts[trackId].total++;
+    });
+  });
+
+  const trackProbabilities = {};
+  Object.entries(trackCounts).forEach(([trackId, counts]) => {
+    const total = counts.total || 1;
+    // Floor at 2% (0.02) to prevent division by zero or infinite log values
+    trackProbabilities[trackId] = {
+      love: Math.max(counts.love / total, 0.02),
+      meh: Math.max(counts.meh / total, 0.02),
+      dislike: Math.max(counts.dislike / total, 0.02)
+    };
+  });
+
+  // =========================================================================
+  // STEP 2: INFORMATION-WEIGHTED SIMILARITY (TF-IDF for Shared Tracks)
+  // =========================================================================
+  const rawPairResults = [];
+
+  for (let i = 0; i < users.length; i++) {
+    for (let j = i + 1; j < users.length; j++) {
+      const u1 = users[i];
+      const u2 = users[j];
+      const u1Mean = userMeans[u1.name];
+      const u2Mean = userMeans[u2.name];
+
+      let sharedCount = 0;
+      let totalTrackScore = 0;
+
+      Object.keys(u1.votes).forEach(trackId => {
+        const v1 = u1.votes[trackId];
+        const v2 = u2.votes[trackId];
+
+        if (v2 && NUMERIC_MAP[v1] !== undefined && NUMERIC_MAP[v2] !== undefined) {
+          sharedCount++;
+
+          // Normalized deviation from personal mean
+          const r1Centered = NUMERIC_MAP[v1] - u1Mean;
+          const r2Centered = NUMERIC_MAP[v2] - u2Mean;
+
+          // Information weights: Rarity = -log2(P(v))
+          const p1 = trackProbabilities[trackId]?.[v1] || 0.02;
+          const p2 = trackProbabilities[trackId]?.[v2] || 0.02;
+          const info1 = -Math.log2(p1);
+          const info2 = -Math.log2(p2);
+
+          let trackScore = 0;
+          if (v1 === v2) {
+            // Agreement on rare choices yields high positive scores
+            const rarityWeight = info1;
+            const convictionBoost = 1 + Math.abs(r1Centered * r2Centered);
+            trackScore = rarityWeight * convictionBoost;
+          } else {
+            // Disagreements on consensus choices yield severe negative penalties
+            const penaltyWeight = Math.max(info1, info2);
+            const divergence = 1 + Math.abs(r1Centered - r2Centered) / 2;
+            trackScore = -penaltyWeight * divergence;
           }
-        });
 
-        // Require at least 3 shared tracks to evaluate a pair
-        if (sharedCount >= 3) {
-          const avgScore = scoreSum / sharedCount;
-
-          if (avgScore > maxScore) {
-            maxScore = avgScore;
-            twinsPair = { u1: u1.name.trim(), u2: u2.name.trim(), score: Math.round(avgScore * 100) };
-          }
-          if (avgScore < minScore) {
-            minScore = avgScore;
-            nemesesPair = { u1: u1.name.trim(), u2: u2.name.trim(), score: Math.round(avgScore * 100) };
-          }
+          totalTrackScore += trackScore;
         }
+      });
+
+      if (sharedCount > 0) {
+        rawPairResults.push({
+          u1: u1.name.trim(),
+          u2: u2.name.trim(),
+          sharedCount,
+          rawScore: totalTrackScore / sharedCount
+        });
       }
     }
-
-    return { twinsPair, nemesesPair };
   }
+
+  if (rawPairResults.length === 0) return null;
+
+  // =========================================================================
+  // STEP 3: BAYESIAN SHRINKAGE (Stabilize Small Sample Sizes)
+  // =========================================================================
+  const populationMeanScore =
+    rawPairResults.reduce((acc, pair) => acc + pair.rawScore, 0) / rawPairResults.length;
+  
+  const lambda = 5; // Smoothing strength parameter (requires ~5-10 tracks to pull away from mean)
+
+  const processedPairs = rawPairResults.map(pair => {
+    const adjustedScore =
+      (pair.sharedCount * pair.rawScore + lambda * populationMeanScore) /
+      (pair.sharedCount + lambda);
+
+    return { ...pair, adjustedScore };
+  });
+
+  // Identify Taste Twins (Max Score) and Nemeses (Min Score)
+  let twinsPair = null;
+  let nemesesPair = null;
+  let maxScore = -Infinity;
+  let minScore = Infinity;
+
+  processedPairs.forEach(pair => {
+    if (pair.adjustedScore > maxScore) {
+      maxScore = pair.adjustedScore;
+      twinsPair = pair;
+    }
+    if (pair.adjustedScore < minScore) {
+      minScore = pair.adjustedScore;
+      nemesesPair = pair;
+    }
+  });
+
+  // Scale scores relative to baseline bound (~4.0) for UI percentage rendering
+  const MAX_EXPECTED_SCORE = 4.0;
+  
+  const twinPct = twinsPair
+    ? Math.min(100, Math.max(0, Math.round((twinsPair.adjustedScore / MAX_EXPECTED_SCORE) * 100)))
+    : 0;
+
+  const nemesisPct = nemesesPair
+    ? Math.min(100, Math.max(0, Math.round((Math.abs(nemesesPair.adjustedScore) / MAX_EXPECTED_SCORE) * 100)))
+    : 0;
+
+  return {
+    twinsPair: twinsPair ? { u1: twinsPair.u1, u2: twinsPair.u2, score: twinPct } : null,
+    nemesesPair: nemesesPair ? { u1: nemesesPair.u1, u2: nemesesPair.u2, score: nemesisPct } : null
+  };
+}
 
   // OVERVIEW RESULTS (Statistical Page)
   async function loadOverviewResults(){
